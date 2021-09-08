@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS "customer" (
+    "id" INTEGER,
+	"name"	TEXT NOT NULL UNIQUE,
+    "address"	TEXT,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
+
+CREATE TABLE IF NOT EXISTS "item" (
+	"id"	INTEGER,
+	"description"	TEXT NOT NULL UNIQUE,
+	"price"	FLOAT NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT)
+);
