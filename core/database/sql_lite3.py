@@ -49,9 +49,8 @@ class Database:
 
                 if args[0].connection:
                     args[0].connection.close()
-                    return True
 
-                return False
+                return result
 
         return wrapper
 
@@ -76,7 +75,7 @@ class Database:
                 data: dict
 
             Returns:
-                SQL Cursor
+                dict
         """
         query = f"SELECT * FROM {table_name} WHERE {id_field} = (?) LIMIT 1"
         return self.query(query=query, parameters=data)
@@ -89,7 +88,7 @@ class Database:
                 data: dict
 
             Returns:
-                SQL Cursor
+                dict
         """
         query_data = self.prepare_query_data(data=data, query_type="SELECT")
         query = f"SELECT * FROM {table_name} WHERE {query_data['fields']}"
@@ -103,11 +102,12 @@ class Database:
                 data: dict
 
             Returns:
-                SQL Cursor
+                int: inserted_id
         """
         query_data = self.prepare_query_data(data=data, query_type="INSERT")
         query = f"INSERT OR IGNORE INTO {table_name} ({query_data['fields']}) VALUES ({query_data['fields_placeholder']})"
-        return self.query(query=query, parameters=query_data["parameters"])
+        result = self.query(query=query, parameters=query_data["parameters"])
+        return result.lastrowid
 
     def update(self, table_name, data, where_data):
         """Updates data from database table
@@ -118,13 +118,14 @@ class Database:
                 where_data: dict
 
             Returns:
-                SQL Cursor
+                int: affected rows
         """
         update_data = self.prepare_query_data(data=data, query_type="UPDATE")
         conditions_data = self.prepare_query_data(data=where_data, query_type="SELECT")
         update_data['parameters'].extend(conditions_data['parameters'])
         query = f"UPDATE {table_name} SET {update_data['fields']} WHERE {conditions_data['fields']}"
-        return self.query(query=query, parameters=update_data['parameters'])
+        result = self.query(query=query, parameters=update_data['parameters'])
+        return result.rowcount > 0
 
     def delete(self, table_name, data):
         """Deletes data from database table
@@ -134,11 +135,27 @@ class Database:
                 data: dict
 
             Returns:
-                SQL Cursor
+                int: affected rows
         """
         query_data = self.prepare_query_data(data=data, query_type="SELECT")
         query = f"DELETE FROM {table_name} WHERE {query_data['fields']}"
-        return self.query(query=query, parameters=query_data['parameters'])
+        result = self.query(query=query, parameters=query_data['parameters'])
+        return result.rowcount > 0
+
+    def exists(self, table_name, data):
+        """Checks if data exists in the database table
+
+            Args:
+                table_name: str
+                data: dict
+
+            Returns:
+                bool
+        """
+        query_data = self.prepare_query_data(data=data, query_type="SELECT")
+        query = f"SELECT COUNT(*) AS counter FROM {table_name} WHERE {query_data['fields']} LIMIT 1"
+        result = self.query(query=query, parameters=query_data['parameters'])
+        return result[0]["counter"] > 0
 
     def __connect(self):
         """Connect to database"""
